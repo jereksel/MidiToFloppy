@@ -32,57 +32,17 @@ THE SOFTWARE.
 #include <stdbool.h>
 #include <math.h>
 
-// pin 11 = wiringPi Pin 0. Use this for motor direction.
 #define dirPin 0
-// pin 12 supports pwm mode but it turns out I didn't need pwm mode in the end!
-// pin 12 = wiringPi Pin 1. Use this for stepper motor.
 #define stepPin  1
-#define buzzerPin  2
 
-
-#define stepPin_2 3
 #define dirPin_2  4
+#define stepPin_2 3
 
-// Define an octave with naturals and sharps (Zz = rest)
-//enum { Cn, Cs, Dn, Ds, En, Fn, Fs, Gn, Gs, An, As, Bn, Zz };
 
-// Define another one with flats and remaining sharps
-//enum { Bs, Df, Dn2, Ef, En2, Es, Gf, Gn2, Af, An2, Bf, Bn2, Zz2 };
-
-/**
- * Frequencies in hundredths of Hz, e.g. middle A = 44000
- * 4 Octaves with 12 notes per octave, i.e. C to B
- */
-/*
-const long int freq[8][13] = {
-   {0,0,0,0,0,0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0,0,0,0,0,0},
-   {0,0,0,0,0,0,0,0,0,0,0,0,0},
-   {13081,13859,14683,15556,16481,17461,18500,19600,20765,22000,23308,24694,0 },
-   {26163,27718,29366,31113,32963,34923,36999,39200,41530,44000,46616,49388,0 },
-   {52325,55437,58733,62225,65925,69846,73999,78399,83061,88000,93233,98777,0 },
-   {104650,110873,117466,124451,131851,139691,147998,156798,166122,176000,186466,197553,0},
-   {209300,221700,234900,248900,263700,279400,296000,313600,332200,352000,372900,395100,0}
-};
-*/
-/**
- * Frequency (in Hz) is converted to Floppy Delay using the formula:
- *   314000 / frequency = floppy delay
- * so middle A = 314000 / 440 = 714
- *
- * Lowest realistic note is delay = 1550
- * Highest realistic note is delay = 210
- */
 const int floppyConv = 31400000;
-
-// Calculate all our floppy delays at the start
-//int floppyDelay[8][13];
 
 int freq[14][12];
 
-
-
-// Song1 is the C major scale (note, octave, length)
 
 int music[][3] = {{ZZ, 0, 1538}, {NOTE_G, 2, 320}, {ZZ, 0, 256}, {NOTE_C, 3, 188}, {ZZ, 0, 772}, {NOTE_GS, 2, 320}, {ZZ, 0, 256}, {NOTE_AS, 2, 188}, {ZZ, 0, 2500}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 284}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 284}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 388}, {NOTE_F, 2, 320}, {ZZ, 0, 448}, {NOTE_G, 2, 320}, {ZZ, 0, 256}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_G, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_D, 1, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 188}, {ZZ, 0, 196}, {NOTE_G, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_G, 1, 672}, {ZZ, 0, 3168}, {NOTE_G, 1, 320}, {ZZ, 0, 64}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_D, 2, 320}, {ZZ, 0, 64}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 3076}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 320}, {ZZ, 0, 64}, {NOTE_G, 1, 1440}, {ZZ, 0, 96}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_F, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_F, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_E, 0, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_E, 0, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 0, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 0, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 0, 92}, {ZZ, 0, 4}, {NOTE_D, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_G, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 0, 92}, {ZZ, 0, 4}, {NOTE_B, 0, 92}, {ZZ, 0, 4}, {NOTE_D, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_G, 2, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_E, 2, 320}, {ZZ, 0, 64}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_E, 2, 320}, {ZZ, 0, 64}, {NOTE_C, 1, 1440}, {ZZ, 0, 96}, {NOTE_C, 1, 320}, {ZZ, 0, 64}, {NOTE_D, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 320}, {ZZ, 0, 64}, {NOTE_C, 1, 672}, {ZZ, 0, 96}, {NOTE_D, 1, 672}, {ZZ, 0, 3168}, {NOTE_C, 1, 320}, {ZZ, 0, 64}, {NOTE_D, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 0, 188}, {ZZ, 0, 4}, {NOTE_G, 0, 320}, {ZZ, 0, 64}, {NOTE_F, 0, 188}, {ZZ, 0, 4}, {NOTE_G, 0, 1440}, {ZZ, 0, 96}, {NOTE_G, 2, 320}, {ZZ, 0, 256}, {NOTE_C, 3, 188}, {ZZ, 0, 772}, {NOTE_GS, 2, 320}, {ZZ, 0, 256}, {NOTE_AS, 2, 188}, {ZZ, 0, 2500}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 284}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 196}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 284}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 388}, {NOTE_F, 2, 320}, {ZZ, 0, 448}, {NOTE_G, 2, 320}, {ZZ, 0, 256}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 188}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 196}, {NOTE_G, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_D, 1, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 188}, {ZZ, 0, 196}, {NOTE_G, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 2, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_G, 1, 672}, {ZZ, 0, 3168}, {NOTE_G, 1, 320}, {ZZ, 0, 64}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_D, 2, 320}, {ZZ, 0, 64}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 188}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 188}, {ZZ, 0, 3076}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_AS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 320}, {ZZ, 0, 64}, {NOTE_G, 1, 1440}, {ZZ, 0, 96}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_F, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_F, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_E, 0, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_E, 0, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_DS, 1, 92}, {ZZ, 0, 4}, {NOTE_AS, 0, 92}, {ZZ, 0, 4}, {NOTE_F, 0, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 0, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 92}, {ZZ, 0, 4}, {NOTE_GS, 1, 92}, {ZZ, 0, 4}, {NOTE_F, 1, 92}, {ZZ, 0, 4}, {NOTE_C, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 0, 92}, {ZZ, 0, 4}, {NOTE_D, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_G, 2, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 0, 92}, {ZZ, 0, 4}, {NOTE_B, 0, 92}, {ZZ, 0, 4}, {NOTE_D, 1, 92}, {ZZ, 0, 4}, {NOTE_G, 1, 92}, {ZZ, 0, 4}, {NOTE_B, 1, 92}, {ZZ, 0, 4}, {NOTE_D, 2, 92}, {ZZ, 0, 4}, {NOTE_G, 2, 92}, {ZZ, 0, 4}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_E, 2, 320}, {ZZ, 0, 64}, {NOTE_C, 2, 320}, {ZZ, 0, 64}, {NOTE_E, 2, 320}, {ZZ, 0, 64}, {NOTE_C, 1, 1440}, {ZZ, 0, 96}, {NOTE_C, 1, 320}, {ZZ, 0, 64}, {NOTE_D, 1, 320}, {ZZ, 0, 64}, {NOTE_DS, 1, 320}, {ZZ, 0, 64}, {NOTE_F, 1, 320}, {ZZ, 0, 64}, {NOTE_C, 1, 672}, {ZZ, 0, 96}, {NOTE_D, 1, 672}, {ZZ, 0, 3168}, {NOTE_C, 1, 320}, {ZZ, 0, 64}, {NOTE_D, 1, 188}, {ZZ, 0, 4}, {NOTE_C, 1, 188}, {ZZ, 0, 4}, {NOTE_AS, 0, 188}, {ZZ, 0, 4}, {NOTE_G, 0, 320}, {ZZ, 0, 64}, {NOTE_F, 0, 188}, {ZZ, 0, 4}, {NOTE_G, 0, 1440}};
 
@@ -156,10 +116,6 @@ int init()
 
 void playMusic()
 {
-
-//    softToneCreate(buzzerPin);
-
-    printf("TEST");
 
     int a;
     int* song;
