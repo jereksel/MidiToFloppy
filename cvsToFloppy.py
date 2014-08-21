@@ -25,10 +25,13 @@ THE SOFTWARE.
 #!/usr/bin/env python
 import argparse, csv
 
+filename = "cornered.csv"
 
-def buildBeep():
-    csvFile = csv.reader(open('samurai.csv', 'rb'))
-    notes = 'const int music[][3] = {'
+def buildBeep(id, f1):
+    csvFile = csv.reader(open(filename, 'rb'))
+    notes = 'int music_'
+    notes += str((id)-1)
+    notes += "[][3] = {"
     ilosc_danych = 0
     timing_temp = -1
     myList = ['NOTE_C','NOTE_CS','NOTE_D','NOTE_DS','NOTE_E','NOTE_F','NOTE_FS','NOTE_G','NOTE_GS','NOTE_A','NOTE_AS','NOTE_B','ZZ']
@@ -36,8 +39,8 @@ def buildBeep():
     tempo = 2
     for row in csvFile:
         if (ilosc_danych >=0):
-            if "4" in row[0]:                                                       # Double/Triple notes TODO: Choose center
-                if ((('Note_on_c' in row[2]) or ('Note_off_c' in row[2]))) and not (int(row[1]) == int(timing_temp)):
+            if str(id) in row[0]:                                                       # Double/Triple notes TODO: Choose center
+                if ((('Note_on_c' in row[2]) or ('Note_off_c' in row[2]))):
                     if (dubel):
                         dubel = 0
                         timing_2 = int(row[1]) - int(timing_temp)
@@ -66,10 +69,29 @@ def buildBeep():
                     ilosc_danych = ilosc_danych + 1
 
     notes = notes[:-2]
-    notes += '};'
-    f1 = open('./notes', 'w+')
+    notes += '};\n'
+ #   f1 = open('./notes', 'w+')
     f1.write(notes)
-    return
+
+def main():
 
 
-buildBeep()
+    max = 0
+
+    # Let's find last track number
+    csvFile = csv.reader(open(filename, 'rb'))
+
+    for row in csvFile:
+        if int(row[0]) > max:
+            max = int(row[0])
+
+    f1 = open('./notes', 'w+')
+
+    for x in range(2, max+1):
+        buildBeep(x, f1)
+
+
+
+
+if __name__ == "__main__":
+    main()
