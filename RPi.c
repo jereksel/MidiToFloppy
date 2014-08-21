@@ -192,7 +192,7 @@ void playMusic()
 
                     int* song = getMusic(i, a);
 
-                    softToneWrite (buzzerPin, 0);
+                    softToneWrite (pins[i][0], 0);
                     note_number[i] = note_number[i]+1;
 
                     softToneWrite (pins[i][0], (freq[song[1]+3+changes[i]][song[0]]));
