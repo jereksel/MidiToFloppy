@@ -25,7 +25,7 @@ THE SOFTWARE.
 #!/usr/bin/env python
 import argparse, csv
 
-filename = "cornered.csv"
+filename = "samurai.csv"
 
 def buildBeep(id, f1):
     csvFile = csv.reader(open(filename, 'rb'))
@@ -72,6 +72,7 @@ def buildBeep(id, f1):
                     ilosc_danych = ilosc_danych + 1
 
     notes = notes[:-2]
+    notes += ',{-2,0,0}'
     notes += '};\n'
  #   f1 = open('./notes', 'w+')
     f1.write(notes)

@@ -38,14 +38,20 @@ const int floppyConv = 31400000;
 
 int freq[14][12];
 
-int endTime[] = {0,0,0};
-int pauseTime[] = {0,0,0};
-int note_number[] = {-1,-1,-1};
-int dir[] = {0,0,0};
-int pause_a[] = {0,0,0};
+int endTime[devices];
+int pauseTime[devices];
+int note_number[devices];
+int dir[devices];
+int pause_a[devices];
 
 int init()
 {
+
+    for (int i = 0; i<devices; i++)
+    {
+    note_number[i] = -1;
+    }
+
     if (wiringPiSetup() == -1)
     {
         printf("Failed to initialize wiringPi\n");
@@ -118,7 +124,10 @@ void playMusic()
 
                     song = getMusic(i, a);
 
-                    if (song[0] != -1)
+                    if (song[0] == -2) {
+                        return;
+                    }
+                    else if (song[0] != -1)
                     {
                         pause_a[i] = (floppyConv / (freq[song[1]+3+changes[i]][song[0]]))/100;
 
@@ -157,6 +166,10 @@ void playMusic()
                     a = note_number[i];
 
                     int* song = getMusic(i, a);
+
+                    if (song[0] == -2) {
+                        return;
+                    }
 
                     softToneWrite (pins[i][0], 0);
                     note_number[i] = note_number[i]+1;
