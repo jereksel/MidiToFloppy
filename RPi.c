@@ -94,9 +94,7 @@ bool is_floppy[3] = {true, true, true};
 
 int pins[][2] = {{dirPin, stepPin},{dirPin_2, stepPin_2},{6,5}};
 
-//{OCTAVE, NOTES}
-
-int changes[][2] = {{-1,0},{-1,0},{-4,0}};
+int changes[] = {-1,-1,-4};
 
 int devices = 3;
 
@@ -110,10 +108,8 @@ int pause_a[] = {0,0,0};
 int * getMusic(int i, int number)
 {
     if (i == 0) {
-        //return music[number];
         return music[number];
     } else if (i == 1) {
-        //return music_2[number];
         return music_2[number];
     } else if (i == 2) {
         return music_3[number];
@@ -121,29 +117,6 @@ int * getMusic(int i, int number)
 
     return NULL;
 }
-
-void resetMotor()
-{
-    // To reset head position move back 10 then forward 5
-    digitalWrite(dirPin, LOW);
-    for (int i=0; i < 10; i++)
-    {
-        digitalWrite(stepPin, HIGH);
-        digitalWrite(stepPin, LOW);
-        delay(1);
-    }
-
-    digitalWrite(dirPin, HIGH);
-    for (int i=0; i < 5; i++)
-    {
-        digitalWrite(stepPin, HIGH);
-        digitalWrite(stepPin, LOW);
-        delay(1);
-    }
-
-    delay(1000);
-}
-
 
 int init()
 {
@@ -168,15 +141,13 @@ int init()
 
     }
 
-     resetMotor();
-
-        for (int octave = -3; octave < 9; octave++) {
-            for (int note = 0; note < 12; note++) {
-                double a = pow((double) 2,(double) octave);
-                double b = pow((double) 1.059463,(double) note);
-                freq[octave+3][note] = (275*a*b)/10;
-            }
+    for (int octave = -3; octave < 9; octave++) {
+        for (int note = 0; note < 12; note++) {
+            double a = pow((double) 2,(double) octave);
+            double b = pow((double) 1.059463,(double) note);
+            freq[octave+3][note] = (275*a*b)/10;
         }
+    }
 
     return 0;
 }
@@ -227,7 +198,7 @@ void playMusic()
 
                     if (song[0] != -1)
                     {
-                        pause_a[i] = (floppyConv / (freq[song[1]+3+changes[i][0]][song[0]+changes[i][1]]))/100;
+                        pause_a[i] = (floppyConv / (freq[song[1]+3+changes[i]][song[0]]))/100;
 
                         pauseTime[i] = micros() + pause_a[i];
                     }
@@ -268,7 +239,7 @@ void playMusic()
                     softToneWrite (buzzerPin, 0);
                     note_number[i] = note_number[i]+1;
 
-                    softToneWrite (pins[i][0], (freq[song[1]+3+changes[i][0]][song[0]+changes[i][1]]));
+                    softToneWrite (pins[i][0], (freq[song[1]+3+changes[i]][song[0]]));
 
                     endTime[i] = millis() + song[2];
                 }
@@ -276,98 +247,6 @@ void playMusic()
         }
 
     }
-
-
-
-
-/*
-
-        if (millis() >= endTime[0])
-        {
-            note_number[0] = note_number[0]+1;
-            i = note_number[0];
-
-            if (song[i][0] != 0)
-            {
-                pause = (floppyConv / (song[i][0]))/100;
-                pauseTime[0] = micros() + pause;
-            }
-            else
-            {
-                pauseTime[0] = INT_MAX;
-            }
-
-            endTime[0] = millis() + song[i][1];
-
-
-        }
-
-
-        if (millis() >= endTime[2])
-        {
-            note_number[2] = note_number[2]+1;
-            i = note_number[2];
-
-            if (song_3[i][0] != 0)
-            {
-                pause = (floppyConv / (song_3[i][0]))/100;
-                pauseTime[2] = micros() + pause;
-            }
-            else
-            {
-                pauseTime[2] = INT_MAX;
-            }
-
-            endTime[2] = millis() + song_3[i][1];
-
-
-        }
-
-        if (millis() >= endTime[1])
-        {
-            softToneWrite (buzzerPin, 0);
-            note_number[1] = note_number[1]+1;
-            i = note_number[1];
-            //    note = song_2[i][0];
-            //    octave = song_2[i][1];
-
-            softToneWrite (buzzerPin, (song_2[i][0]));
-
-
-            endTime[1] = millis() + song_2[i][1];
-        }
-
-
-        if (micros() >= pauseTime[0])
-        {
-
-            if (dir == 0)
-                dir = 1;
-            else
-                dir = 0;
-
-            digitalWrite(dirPin, dir);
-            pauseTime[0] = micros() + pause;
-            digitalWrite(stepPin, HIGH);
-            digitalWrite(stepPin, LOW);
-        }
-
-
-        if (micros() >= pauseTime[2])
-        {
-
-                    if (dir == 0)
-                        dir = 1;
-                    else
-                        dir = 0;
-
-                    digitalWrite(dirPin_2, dir);
-                    pauseTime[2] = micros() + pause;
-                    digitalWrite(stepPin_2, HIGH);
-                    digitalWrite(stepPin_2, LOW);
-        }
-
-*/
 
 }
 
@@ -379,8 +258,6 @@ int main()
         printf("init failed - Exiting\n");
         return 1;
     }
-
-    //playSong(song2, song2_tempo);
 
     playMusic();
 
