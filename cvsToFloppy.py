@@ -34,19 +34,21 @@ def buildBeep(id, f1):
     notes += "[][3] = {"
     ilosc_danych = 0
     timing_temp = -1
+    type_temp = ""
     myList = ['NOTE_C','NOTE_CS','NOTE_D','NOTE_DS','NOTE_E','NOTE_F','NOTE_FS','NOTE_G','NOTE_GS','NOTE_A','NOTE_AS','NOTE_B','ZZ']
     dubel = 0
     tempo = 2
     for row in csvFile:
         if (ilosc_danych >=0):
-            if str(id) in row[0]:                                                       # Double/Triple notes TODO: Choose center
-                if ((('Note_on_c' in row[2]) or ('Note_off_c' in row[2]))):
+            if str(id) in row[0]:                                                   # Double/Triple notes TODO: Choose center
+                if ((('Note_on_c' in row[2]) or ('Note_off_c' in row[2]))) and not ((int(row[1]) == int(timing_temp)) and (row[2] == type_temp)):
                     if (dubel):
                         dubel = 0
                         timing_2 = int(row[1]) - int(timing_temp)
                         notes += str(timing_2 * tempo)
                         notes += "}, "
                         timing_temp = int(float(row[1]))
+                        type_temp = row[2]
                     else:
                         # Delete later
                         notes += "{"
@@ -66,6 +68,7 @@ def buildBeep(id, f1):
                         notes += str((int(float(row[4]))) // 12)
                         notes += ", "
                         dubel = 1
+                        type_temp = row[2]
                     ilosc_danych = ilosc_danych + 1
 
     notes = notes[:-2]
