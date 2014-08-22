@@ -23,16 +23,15 @@ THE SOFTWARE.
 '''
 
 # !/usr/bin/env python
-import argparse, csv
+import csv
 
 filename = "samurai.csv"
-
 
 def buildBeep(id, f1):
     csvFile = csv.reader(open(filename, 'rb'))
     notes = 'int music_'
     notes += str((id) - 1)
-    notes += "[][3] = {"
+    notes += "[] = {"
     timing_temp = -1
     type_temp = ""
     myList = ['NOTE_C', 'NOTE_CS', 'NOTE_D', 'NOTE_DS', 'NOTE_E', 'NOTE_F', 'NOTE_FS', 'NOTE_G', 'NOTE_GS', 'NOTE_A',
@@ -47,18 +46,17 @@ def buildBeep(id, f1):
                     dubel = 0
                     timing_2 = int(row[1]) - int(timing_temp)
                     notes += str(timing_2 * tempo)
-                    notes += "}, "
+                    notes += ", "
                     timing_temp = int(float(row[1]))
                     type_temp = row[2]
                 else:
-                    notes += "{"
                     notes += myList[12]
                     notes += ", "
                     notes += "0"
                     notes += ", "
                     timing_2 = int(row[1]) - int(timing_temp)
                     notes += str(timing_2 * tempo)
-                    notes += "}, {"
+                    notes += ", "
                     timing_temp = int(float(row[1]))
                     notes += myList[int(float(row[4])) % 12]
                     notes += ", "
@@ -68,8 +66,7 @@ def buildBeep(id, f1):
                     type_temp = row[2]
 
     notes = notes[:-2]
-    notes += ',{-2,0,0}'
-    notes += '};\n'
+    notes += ',-2,0,0};\n'
     #   f1 = open('./notes', 'w+')
     f1.write(notes)
 
