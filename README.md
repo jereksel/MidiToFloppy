@@ -12,7 +12,7 @@ INSTALLATION
 2. Place csv file in MidiToFloppy directory
 3. Open cvsToFloppy.py and change filename
 4. Run cvsToFloppy.py
-5. Create notes.h file (you can use template)
+5. Create song.h file (you can use template)
 6. Copy content from file "notes" to notes.h
 7. Change song.h file (see comments in template file).
 8. Place RPi.c, song.h, scale.h and Makefile in one folder (on RaspberryPi)
