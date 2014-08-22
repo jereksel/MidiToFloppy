@@ -115,8 +115,31 @@ void playMusic()
     {
         for (i = 0; i<devices; i++)
         {
-            if (is_floppy[i])
+            if (is_buzzer[i])
             {
+
+                if (millis() >= endTime[i])
+                {
+
+                    a = note_number[i];
+
+                    int* song = getMusic(i, a);
+
+                    if (song[0] == -2) {
+                        return;
+                    }
+
+                    softToneWrite (pins[i][0], 0);
+                    note_number[i] = note_number[i]+1;
+
+                    softToneWrite (pins[i][0], (freq[song[1]+3+changes[i]][song[0]]));
+
+                    endTime[i] = millis() + song[2];
+                }
+
+            }
+           else
+           {
                 if (millis() >= endTime[i])
                 {
                     note_number[i] = note_number[i]+1;
@@ -154,29 +177,6 @@ void playMusic()
                     pauseTime[i] = micros() + pause_a[i];
                     digitalWrite(pins[i][1], HIGH);
                     digitalWrite(pins[i][1], LOW);
-                }
-
-
-            }
-           else
-           {
-                if (millis() >= endTime[i])
-                {
-
-                    a = note_number[i];
-
-                    int* song = getMusic(i, a);
-
-                    if (song[0] == -2) {
-                        return;
-                    }
-
-                    softToneWrite (pins[i][0], 0);
-                    note_number[i] = note_number[i]+1;
-
-                    softToneWrite (pins[i][0], (freq[song[1]+3+changes[i]][song[0]]));
-
-                    endTime[i] = millis() + song[2];
                 }
            }
         }
