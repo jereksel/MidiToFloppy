@@ -22,6 +22,17 @@
  THE SOFTWARE.
  */
 
+#include <limits.h>
+#include <Wire.h>
+#include <LCD.h>
+#include <LiquidCrystal_I2C.h>
+#include <avr/pgmspace.h>
+#include "scale.h"
+#include "song.h"
+#include "device.h"
+#include "samurai.h"
+
+
 bool swagger_bool;
 unsigned long swagger_time = 0;
 
@@ -29,17 +40,7 @@ int song[3] = {
   0, 0, 0
 };
 
-#include <avr/pgmspace.h>
-#include "scale.h"
-#include "song.h"
-#include "device.h"
-#include "samurai.h"
-#include <limits.h>
-#include <Wire.h>
-#include <LCD.h>
-#include <LiquidCrystal_I2C.h>
-
-#define I2C_ADDR    0x27  // Define I2C Address where the PCF8574A is
+#define I2C_ADDR    0x27
 #define BACKLIGHT_PIN     3
 #define En_pin  2
 #define Rw_pin  1
@@ -97,15 +98,8 @@ void setup(void)
 
   for (byte i = 0; i < devices; i++)
   {
-    if (is_buzzer[i])
-    {
-      pinMode(pins[i][0], OUTPUT);
-    }
-    else
-    {
-      pinMode(pins[i][0], OUTPUT);
-      pinMode(pins[i][1], OUTPUT);
-    }
+    pinMode(pins[i][0], OUTPUT);
+    pinMode(pins[i][1], OUTPUT);
   }
 
   menu();
@@ -118,9 +112,9 @@ void menu()
   lcd.begin (20, 4);
   lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
   lcd.setBacklight(HIGH);
-  lcd.home();                   // go home
+  lcd.home();
   lcd.print("1: Steel Samurai");
-  lcd.setCursor ( 0, 1 );        // go to the next line
+  lcd.setCursor ( 0, 1 );
   lcd.print("8: Test/reset");
 
 }
@@ -140,7 +134,6 @@ void cleandata()
     dir[i] = 0;
     pause[i] = 0;
   }
-
 }
 
 void loop()
@@ -171,34 +164,28 @@ void play()
 
 void test()
 {
-
   for (byte i = 0; i < devices; i++)
   {
-    if (!is_buzzer[i])
-    {
-      for (byte s = 0; s < 100; s++) {
-        digitalWrite(pins[i][0], LOW);
-        digitalWrite(pins[i][1], HIGH);
-        digitalWrite(pins[i][1], LOW);
-        delay(5);
-      }
+    for (byte s = 0; s < 100; s++) {
+      digitalWrite(pins[i][0], LOW);
+      digitalWrite(pins[i][1], HIGH);
+      digitalWrite(pins[i][1], LOW);
+      delay(5);
+    }
 
-      for (byte s = 0; s < 10; s++) {
-        digitalWrite(pins[i][0], HIGH);
-        digitalWrite(pins[i][1], HIGH);
-        digitalWrite(pins[i][1], LOW);
-        delay(5);
-      }
+    for (byte s = 0; s < 10; s++) {
+      digitalWrite(pins[i][0], HIGH);
+      digitalWrite(pins[i][1], HIGH);
+      digitalWrite(pins[i][1], LOW);
+      delay(5);
     }
   }
-
 }
 
 void playsong()
 {
   while (1)
   {
-
     for (int i = 0; i < devices; i++)
     {
       if (digitalRead(button_8) == HIGH) {
@@ -210,108 +197,74 @@ void playsong()
         swagger_time = millis() + 500;
       }
 
-      if (is_buzzer[i])
+      if (millis() >= endTime[i])
       {
+        note_number[i] = note_number[i] + 1;
+        a = note_number[i];
+        s->getMusic(i, a, song);
 
-        if (millis() >= endTime[i])
+        if (song[0] == 254) {
+          return;
+        }
+        else if (song[0] != 255)
         {
-
-          a = note_number[i];
-
-          s->getMusic(i, a, song);
-
-          if (song[0] == 254) {
-            return;
-          }
-
-          note_number[i] = note_number[i] + 1;
-
           int adjustedfreq = pgm_read_byte(&freq[(song[1] + 3 + changes[i]) * 12 + song[0]]);
-
-          noTone(pins[i][0]);
-          tone(pins[i][0], adjustedfreq);
-
-          endTime[i] = millis() + song[2];
-
-        }
-
-      }
-      else
-      {
-
-        if (millis() >= endTime[i])
-        {
-          note_number[i] = note_number[i] + 1;
-          a = note_number[i];
-          s->getMusic(i, a, song);
-
-          if (song[0] == 254) {
-            return;
-          }
-          else if (song[0] != 255)
-          {
-            int adjustedfreq = pgm_read_byte(&freq[(song[1] + 3 + changes[i]) * 12 + song[0]]);
-            pause[i] = (floppyConv / (adjustedfreq)) / 100;
-            pauseTime[i] = (micros() + pause[i]);
-            if (swagger_bool)
-            {
-              pauseTime[i] = pauseTime[i] - 2500;
-            }
-          }
-          else
-          {
-            pauseTime[i] = LONG_MAX;
-          }
-          endTime[i] = millis() + song[2];
-        }
-        if (micros() >= pauseTime[i])
-        {
-
-          if (swagger_bool)
-          {
-            if (waiting[i])
-            {
-              waiting[i] = false;
-            }
-            else
-            {
-              digitalWrite(pins[i][0], swagger_pin[i]); // Go in reverse
-              digitalWrite(pins[i][1], HIGH);
-              digitalWrite(pins[i][1], LOW);
-
-              swagger[i]++;
-
-              if (swagger[i] >= 60)
-              {
-
-                swagger[i] = 0;
-                if (swagger_pin[i] == 0)
-                  swagger_pin[i] = 1;
-                else
-                  swagger_pin[i] = 0;
-              }
-
-              pauseTime[i] = (micros() + 2500);
-              waiting[i] = true;
-              continue;
-            }
-          }
-
-          if (dir[i] == 0)
-            dir[i] = 1;
-          else
-            dir[i] = 0;
-
-          digitalWrite(pins[i][0], dir[i]);
-          pauseTime[i] = micros() + pause[i];
+          pause[i] = (floppyConv / (adjustedfreq)) / 100;
+          pauseTime[i] = (micros() + pause[i]);
           if (swagger_bool)
           {
             pauseTime[i] = pauseTime[i] - 2500;
           }
-          digitalWrite(pins[i][1], HIGH);
-          digitalWrite(pins[i][1], LOW);
-
         }
+        else
+        {
+          pauseTime[i] = LONG_MAX;
+        }
+        endTime[i] = millis() + song[2];
+      }
+      if (micros() >= pauseTime[i])
+      {
+
+        if (swagger_bool)
+        {
+          if (waiting[i])
+          {
+            waiting[i] = false;
+          }
+          else
+          {
+            digitalWrite(pins[i][0], swagger_pin[i]); // Go in reverse
+            digitalWrite(pins[i][1], HIGH);
+            digitalWrite(pins[i][1], LOW);
+
+            swagger[i]++;
+
+            if (swagger[i] >= 60)
+            {
+              swagger[i] = 0;
+              swagger_pin[i] = !swagger_pin[i];
+            }
+
+            pauseTime[i] = (micros() + 2500);
+            waiting[i] = true;
+            continue;
+          }
+        }
+
+        if (dir[i] == 0)
+          dir[i] = 1;
+        else
+          dir[i] = 0;
+
+        digitalWrite(pins[i][0], dir[i]);
+        pauseTime[i] = micros() + pause[i];
+        if (swagger_bool)
+        {
+          pauseTime[i] = pauseTime[i] - 2500;
+        }
+        digitalWrite(pins[i][1], HIGH);
+        digitalWrite(pins[i][1], LOW);
+
       }
     }
   }
