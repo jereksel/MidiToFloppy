@@ -1,5 +1,7 @@
 class Song
 {
   public:
-    virtual void getMusic(int i, int number, int *song) = 0;
+    virtual unsigned int getDevicesNumber() = 0;
+    virtual void getMusic(int i, int number, unsigned int *song) = 0;
+    virtual char* getName() = 0;
 };

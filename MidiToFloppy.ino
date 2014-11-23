@@ -22,38 +22,40 @@
  THE SOFTWARE.
  */
 
+#include "song.h"
 #include <limits.h>
-#include <Wire.h>
-#include <LCD.h>
-#include <LiquidCrystal_I2C.h>
 #include <avr/pgmspace.h>
 #include "scale.h"
-#include "song.h"
-#include "device.h"
-#include "samurai.h"
 
+
+/* EDIT ONLY THIS */
+
+#define devices_number 1
+const int pins[][2] = {{22, 23}};
+
+#include "samurai.h"
+#include "lying.h"
+#include "king.h"
+#include "mortal.h"
+#include "sinusoid.h"
+
+Song *songs[] = {new King(), new Mortal(), new Sinusoid()};
+/* EDIT ONLY THIS */
+
+
+
+
+#include <LiquidCrystal.h>
+
+// select the pins used on the LCD panel
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 bool swagger_bool;
 unsigned long swagger_time = 0;
 
-int song[3] = {
-  0, 0, 0
+unsigned int song[4] = {
+  0, 0, 0, 0
 };
-
-#define I2C_ADDR    0x27
-#define BACKLIGHT_PIN     3
-#define En_pin  2
-#define Rw_pin  1
-#define Rs_pin  0
-#define D4_pin  4
-#define D5_pin  5
-#define D6_pin  6
-#define D7_pin  7
-
-#define button_1 53
-#define button_8 52
-
-LiquidCrystal_I2C       lcd(I2C_ADDR, En_pin, Rw_pin, Rs_pin, D4_pin, D5_pin, D6_pin, D7_pin);
 
 const long floppyConv = 31400000;
 
@@ -72,58 +74,71 @@ const int freq[] PROGMEM = {
   7040, 7458, 7902, 8372, 8869, 9397, 9956, 10548, 11175, 11839, 12543, 13289
 };
 
-long endTime[devices];
-long pauseTime[devices];
-int note_number[devices];
-int dir[devices];
-long pause[devices];
 
-byte swagger[devices];
-bool swagger_pin[devices];
-bool waiting[devices];
+// define some values used by the panel and buttons
+int lcd_key = 0;
+int adc_key_in = 0;
+#define btnRIGHT  0
+#define btnUP     1
+#define btnDOWN   2
+#define btnLEFT   3
+#define btnSELECT 4
+#define btnNONE   5
 
-Song *s;
+// read the buttons
+int read_LCD_buttons()
+{
+  adc_key_in = analogRead(0);      // read the value from the sensor
+  // my buttons when read are centered at these valies: 0, 144, 329, 504, 741
+  // we add approx 50 to those values and check to see if we are close
+  if (adc_key_in > 1000) return btnNONE; // We make this the 1st option for speed reasons since it will be the most likely result
+  if (adc_key_in < 50) return btnRIGHT;
+  if (adc_key_in < 195) return btnUP;
+  if (adc_key_in < 380) return btnDOWN;
+  if (adc_key_in < 555) return btnLEFT;
+  if (adc_key_in < 790) return btnSELECT;
+  return btnNONE;  // when all others fail, return this...
+}
+
+
+long endTime[devices_number];
+long pauseTime[devices_number];
+int note_number[devices_number];
+int dir[devices_number];
+long pause[devices_number];
+
+byte swagger[devices_number];
+bool swagger_pin[devices_number];
+bool waiting[devices_number];
+
+int index = 0;
+
+int numberOfSongs;
 
 int a = 0;
 
-void setup(void)
+void setup()
 {
-
   Serial.begin(9600);
 
-  pinMode(button_1, INPUT);
-  pinMode(button_8, INPUT);
+  numberOfSongs = sizeof(songs) / sizeof(Song);
 
   cleandata();
 
-  for (byte i = 0; i < devices; i++)
+  for (byte i = 0; i < devices_number; i++)
   {
     pinMode(pins[i][0], OUTPUT);
     pinMode(pins[i][1], OUTPUT);
   }
 
   menu();
-
-}
-
-void menu()
-{
-
-  lcd.begin (20, 4);
-  lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
-  lcd.setBacklight(HIGH);
-  lcd.home();
-  lcd.print("1: Steel Samurai");
-  lcd.setCursor ( 0, 1 );
-  lcd.print("8: Test/reset");
-
 }
 
 void cleandata()
 {
-  swagger_bool = true;
+  swagger_bool = false;
   swagger_time = 0;
-  for (byte i = 0; i < devices; i++)
+  for (byte i = 0; i < devices_number; i++)
   {
     swagger[i] = 0;
     swagger_pin[i] = 1;
@@ -136,44 +151,97 @@ void cleandata()
   }
 }
 
+void menu()
+{
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("Select song");
+  lcd.setCursor(0, 1);
+  lcd.print(songs[index]->getName());
+}
+
+
 void loop()
 {
 
-  if (digitalRead(button_1) == HIGH) {
-    s = new Samurai();
-    play();
-  }
-  if (digitalRead(button_8) == HIGH) {
-    test();
+  lcd.setCursor(0, 1);
+  lcd_key = read_LCD_buttons();  // read the buttons
+
+  switch (lcd_key)               // depending on which button was pushed, we perform an action
+  {
+    case btnUP:
+      {
+        index++;
+
+        if (index >= numberOfSongs)
+        {
+          index = 0;
+        }
+
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+        lcd.setCursor(0, 1);
+        lcd.print(songs[index]->getName());
+        delay(500);
+        break;
+      }
+    case btnDOWN:
+      {
+        index--;
+
+        if (index < 0)
+        {
+          index = numberOfSongs - 1;
+        }
+
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+        lcd.setCursor(0, 1);
+        lcd.print(songs[index]->getName());
+        delay(500);
+        break;
+      }
+
+    case btnSELECT:
+      {
+
+        play(songs[index]);
+
+        break;
+      }
   }
 
 }
 
-void play()
+void play(Song *s)
 {
-  delay(1000);
-  lcd.begin (20, 4);
-  lcd.home();
-  lcd.print("1: Toggle swagger");
-  lcd.setCursor ( 0, 1 );
-  lcd.print("8: Stop");
-  playsong();
+  delay(500);
+
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("UP: Toggle swag");
+  lcd.setCursor(0, 1);
+  lcd.print("DOWN: Stop");
+
+  playsong(s);
   cleandata();
   menu();
 }
 
-void test()
+void reset()
 {
-  for (byte i = 0; i < devices; i++)
+  for (byte i = 0; i < devices_number; i++)
   {
-    for (byte s = 0; s < 100; s++) {
+    for (byte s = 0; s < 100; s++)
+    {
       digitalWrite(pins[i][0], LOW);
       digitalWrite(pins[i][1], HIGH);
       digitalWrite(pins[i][1], LOW);
       delay(5);
     }
 
-    for (byte s = 0; s < 10; s++) {
+    for (byte s = 0; s < 10; s++)
+    {
       digitalWrite(pins[i][0], HIGH);
       digitalWrite(pins[i][1], HIGH);
       digitalWrite(pins[i][1], LOW);
@@ -182,17 +250,33 @@ void test()
   }
 }
 
-void playsong()
+void playsong(Song *s)
 {
+  int device = s->getDevicesNumber();
+
+  int button;
+  int adjustedfreq;
+
+  if (device > devices_number)
+  {
+    return;
+  }
+
   while (1)
   {
-    for (int i = 0; i < devices; i++)
+    for (int i = 0; i < device; i++)
     {
-      if (digitalRead(button_8) == HIGH) {
+
+      button = read_LCD_buttons();
+
+      if (button == btnDOWN)
+      {       
+        
         return;
       }
 
-      if (digitalRead(button_1) == HIGH && millis() > swagger_time) {
+      if (button == btnUP && millis() > swagger_time)
+      {
         swagger_bool = !swagger_bool;
         swagger_time = millis() + 500;
       }
@@ -203,23 +287,28 @@ void playsong()
         a = note_number[i];
         s->getMusic(i, a, song);
 
-        if (song[0] == 254) {
-          return;
-        }
-        else if (song[0] != 255)
+        switch (song[0])
         {
-          int adjustedfreq = pgm_read_byte(&freq[(song[1] + 3 + changes[i]) * 12 + song[0]]);
-          pause[i] = (floppyConv / (adjustedfreq)) / 100;
-          pauseTime[i] = (micros() + pause[i]);
-          if (swagger_bool)
-          {
-            pauseTime[i] = pauseTime[i] - 2500;
-          }
+          case ((byte)(-2)) :
+            delete s;
+            return;
+            break;
+
+          case ((byte)(-1)) :
+            pauseTime[i] = LONG_MAX;
+            break;
+
+          default:
+            adjustedfreq = pgm_read_byte(&freq[(song[1] + 3 + song[3]) * 12 + song[0]]);
+            pause[i] = (floppyConv / (adjustedfreq)) / 100;
+            pauseTime[i] = (micros() + pause[i]);
+            if (swagger_bool)
+            {
+              pauseTime[i] = pauseTime[i] - 2500;
+            }
+            break;
         }
-        else
-        {
-          pauseTime[i] = LONG_MAX;
-        }
+
         endTime[i] = millis() + song[2];
       }
       if (micros() >= pauseTime[i])
@@ -251,10 +340,7 @@ void playsong()
           }
         }
 
-        if (dir[i] == 0)
-          dir[i] = 1;
-        else
-          dir[i] = 0;
+        dir[i] = !dir[i];
 
         digitalWrite(pins[i][0], dir[i]);
         pauseTime[i] = micros() + pause[i];
