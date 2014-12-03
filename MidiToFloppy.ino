@@ -271,7 +271,6 @@ void playsong(Song *s)
 
       if (button == btnDOWN)
       {       
-        
         return;
       }
 

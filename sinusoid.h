@@ -1,7 +1,11 @@
+#define MIN 40
+#define MAX 60
+
 class Sinusoid : public Song
 {
   private:
     int a;
+    boolean up;
     void reset();
   public:
     Sinusoid();
@@ -12,28 +16,38 @@ class Sinusoid : public Song
 
 Sinusoid::Sinusoid()
 {
-  a = 20;
+  reset();
 }
 
 void Sinusoid::reset()
 {
-  a = 20;
+  up = true;
+  a = MIN;
 }
 
 void Sinusoid::getMusic(int i, int number, unsigned int *song)
 {
 
-  song[0] = a%12;
-  song[1] = a/12;
+  song[0] = a % 12;
+  song[1] = a / 12;
   song[2] = 100;
   song[3] = 0;
-  a++;
-  
-  Serial.println(a);
-  
-  if (a>35)
+
+  if (up)
   {
-    i = 20;
+    a++;
+    if (a > MAX)
+    {
+      up = false;
+    }
+  }
+  else
+  {
+    a--;
+    if (a < MIN)
+    {
+      up = true;
+    }
   }
 
 }
